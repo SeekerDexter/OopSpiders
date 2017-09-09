@@ -15,7 +15,7 @@ def getInternalLinks(bsObj, includeUrl):
     获取页面所有内链的列表
     :param bsObj: bs4(BeautifulSoup)对象
     :param includeUrl: str，当前bsObj的域名
-    :return: 
+    :return: list
     """
     internalLinks = []
     # 找出所有以“/”开头的链接
@@ -26,10 +26,10 @@ def getInternalLinks(bsObj, includeUrl):
     return internalLinks
 
 
-def getExternalLinks(bsObj, excludeUrl):
+def getExternalLinks(bsObj, includeUrl):
     externalLinks = []
-    # 找出所有以“http”或“www”开头且不包含当前url的链接。（我觉得不严谨）
-    for link in bsObj.findAll('a', href=re.compile('^(http|https|www)((?!'+excludeUrl+').)*$')):
+    # 找出所有以“http”或“www”开头且不包含当前url的链接。（我觉得正则写得不严谨）
+    for link in bsObj.findAll('a', href=re.compile('^(http|https|www)((?!'+includeUrl+').)*$')):
         if link.attrs['href'] is not None:
             if link.attrs['href'] not in externalLinks:
                 externalLinks.append(link.attrs['href'])
@@ -38,7 +38,7 @@ def getExternalLinks(bsObj, excludeUrl):
 
 def splitAddress(addr):
     """
-    
+    获取url的域名
     :param addr: 
     :return: 
     """
@@ -47,13 +47,17 @@ def splitAddress(addr):
 
 
 def getRandomExternalLink(page):
-    # 打开起始页
+    # 打开一个url
     html = urlopen(page)
-    # 制作起始页的
+    # 制作该页的bs4对象
     bsObj = BeautifulSoup(html)
-    externalLinks = getExternalLinks(bsObj, splitAddress(page)[0])
+    # 外链列表
+    externalLinks = getExternalLinks(bsObj, splitAddress(page)[1])
+    # 判断该页内是否有外链
     if len(externalLinks) == 0:
-        internalLinks = getInternalLinks(bsObj, splitAddress(page)[0])
+        # 没有，随机选择一个内链进入下一层继续寻找外链
+        internalLinks = getInternalLinks(bsObj, splitAddress(page)[1])
+        print(splitAddress(page))
         return getRandomExternalLink(internalLinks[random.randint(0, len(internalLinks)-1)])
     else:
         return externalLinks[random.randint(0, len(externalLinks)-1)]
